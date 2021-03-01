@@ -1,0 +1,11 @@
+.join-container {
+    background-color: beige;
+    display: grid;
+    justify-content: center;
+}
+
+.join-label {
+    text-align: center;
+    font-size: 2rem;
+}
+
