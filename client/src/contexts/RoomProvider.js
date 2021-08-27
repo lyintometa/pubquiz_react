@@ -7,7 +7,7 @@ export function useRoom() {
     return useContext(RoomContext)
 }
 
-export function RoomProvider({ children }) {
+export function RoomProvider({ setIsAdmin, children }) {
     const socket = useSocket()
     const [playersData, setPlayersData] = useState([])
 
@@ -25,13 +25,51 @@ export function RoomProvider({ children }) {
 
     useEffect(() => {
         if(socket == null) return
+        socket.on('update-score', scoreData => {
+            setPlayersData(prevPlayers => {
+                const playerToUpdate = prevPlayers.find(player => player.id === scoreData.id)
+                playerToUpdate.score = scoreData.score
+                const otherPlayersData = prevPlayers.filter(player => player.id !== scoreData.id)
+                return [...otherPlayersData, playerToUpdate].sort((a, b) => {
+                    return b.score - a.score
+                })
+            })
+        })
+        return () => socket.off('update-score')
+    }, [socket])
+
+    useEffect(() => {
+        if(socket == null) return
         socket.on('remove-player', ({ id }) => {
             setPlayersData(prevPlayers => {
                 return [...prevPlayers].filter(player => player.id !== id)
             })
         })
-        return () => socket.off('add-player')
+        return () => socket.off('remove-player')
     }, [socket])
+
+    
+    useEffect(() => {
+        if(socket == null) return
+        socket.on('set-admin', () => setIsAdmin(true))
+        return () => socket.off('set-admin')
+    }, [socket])
+
+    useEffect(() => {
+        if(socket == null) return
+        socket.on('update-state', stateData => {
+            setPlayersData(prevPlayers => {
+                console.log(stateData)
+                const playerToUpdate = prevPlayers.find(player => player.id === stateData.id)
+                playerToUpdate.state = stateData.state
+                const otherPlayersData = prevPlayers.filter(player => player.id !== stateData.id)
+                console.log(playerToUpdate)
+                return [...otherPlayersData, playerToUpdate]
+            })
+        })
+        console.log(playersData)
+        return () => socket.off('update-state')
+    }, [socket])    
 
 
     const value = {

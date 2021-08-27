@@ -10,12 +10,14 @@ export function useJoin() {
 export function JoinProvider({ id, setId, setInsideRoom, room, setRoom, children }) {
     const socket = useSocket()
     const [showReconnectModal, setShowReconnectModal] = useState(false)
+    const [errorMessage, setErrorMessage] = useState("")
     const [username, setUsername] = useState()
 
     function joinRoom(username, room, userId) {
         // catch empty strings / undefined values
         const roomId = room !== '' ? room : null 
-        userId = userId ? userId : id
+        userId = userId || id
+        console.log('join-request sent')
         socket.emit('join-request', {userId: userId, username: username, roomId: roomId})
     }
 
@@ -27,14 +29,18 @@ export function JoinProvider({ id, setId, setInsideRoom, room, setRoom, children
     useEffect(() => {
         if(socket == null) return
         socket.on('join-room', data => {
-            if (!data.joinWorked) return //showerrormessage
+            if (!data.joinWorked) {
+                setErrorMessage("Room not found, if you want to create a new room leave the field empty.")
+                return
+            }
+            setErrorMessage("")
             setRoom(data.roomId)
             setId(data.userId)
             setInsideRoom(true)
         })
         return () => socket.off('join-room')
     }, [socket])
-    
+
     useEffect(() => {
         if(socket == null) return
         socket.on('reconnect-offer', username => {
@@ -52,7 +58,8 @@ export function JoinProvider({ id, setId, setInsideRoom, room, setRoom, children
         joinRoom,
         showReconnectModal,
         closeReconnectModal,
-        username
+        username,
+        errorMessage
     }
    
 

@@ -17,14 +17,16 @@ io.on('connection', socket => {
 			//console.log('offering reconnection to game')
 			const player = room.players.find(player => (player.id == userId))
 			socket.emit('reconnect-offer', player.name)
+			console.log(`Player ${player.name} reconnect offered`)
 
-			socket.on('reconnect-accept', () => {
+			/* socket.on('reconnect-accept', () => {
 				player.reconnect(socket)
-			})
+			}) */
 		}
-	}	
+	}
 
 	socket.on('join-request', ({ userId, username, roomId }) => {
+		console.log('join-request received')
 		let room
 		if (roomId) {
 			room = rooms.find(room => (room.id == roomId))
@@ -37,23 +39,33 @@ io.on('connection', socket => {
 			rooms.push(room)
 		}
 		if(room.hasPlayer(userId)) {
-			room.getPlayer(userId).reconnect
+			room.getPlayer(userId).reconnect(socket)
 		} else {
 			room.addPlayer(new Player(username, socket))
 		}
+		socket.room = room
+	})
+
+	socket.on('add-question', questionData => {
+		socket.player.addQuestion(questionData)
+	})
+
+	socket.on('set-state', state => {
+		console.log("yes")
+		socket.player.updateState(state)
 	})
 
 	socket.on('disconnect', () => {
-		//bad scaling, replace later
-		rooms.find(room => {
-			let player = room.players.find(player => {
-				if(player.socket == socket) {
-					player.disconnect()
-					return true
-				}
-			})
-			if (player) return true
-		})			
+		if (socket.player) socket.player.disconnect()	
+	})
+
+	socket.on('request-start-game', () => {
+		socket.room.game.startGame()
+	})
+
+	socket.on('set-answer', selectedOption => {
+		if (!socket.room.game.questionInProgress) return
+		socket.player.setAnswer(selectedOption)
 	})
 })
 

@@ -1,53 +1,96 @@
-import { InputQuestion, ChoiceQuestion, EstimationQuestion } from './Questions'
+const Round = require('./Round')
 
 class Game {
-    constructor(players) {
-        this.round = 0
+    constructor(room) {
         this.isRunning = false
+        this.questionInProgress = false
         this.roundInProgress = false
-        this.players = players
-        this.questions = []
+        this.room = room
+        this.numRounds = 1
+        this.rounds = []
 
-    }
-
-    addQuestion(questionData) {
-        let newQuestion
-        switch(type){
-            case "input":
-            newQuestion = new InputQuestion(questionData)
-            case "choice":
-            newQuestion = new ChoiceQuestion(questionData)
-            case "estimation":
-            newQuestion = new EstimationQuestion(questionData)
-        }
+        this.currentRound = 0
+        this.currentQuestion = 0
     }
 
     startGame() {
-        this.round = 1
+        if (this.isRunning || !this.checkPlayersReady()) return
+        console.log(`Game started.`)
+        this.generateRounds()
         this.isRunning = true
-        this.questions = shuffle([...this.questions])
+        this.startRound()
     }
 
-    nextRound() {
+    startRound() {
+        if (this.roundInProgress) return
+        console.log(`Round ${this.currentRound} started.`)
+        this.roundInProgress = true
+        this.currentQuestion = 0
+        this.startQuestion()
+    }
 
+    startQuestion() {
+        if (this.questionInProgress) return
+        this.questionInProgress = true
+        this.room.players.forEach(player => {
+            player.setAnswer('')
+        })
+        const question = this.rounds[this.currentRound].askQuestion()
+        setTimeout(() => {this.endQuestion(question)}, 10000)
+    }
+
+    endQuestion(question) {
+        if (!this.questionInProgress) return
+        console.log(`Question ${this.currentQuestion} of Round ${this.currentRound} ended.`)
+        this.questionInProgress = false
+        this.room.players.forEach(player => {
+            player.socket.emit('reveil-answer', question.answer)
+            if(question.compareAnswer(player.answers[this.currentRound][this.currentQuestion])) player.addScore(1)
+        })
+        this.currentQuestion++
+        if (this.rounds[this.currentRound].hasNextQuestion()) {
+            setTimeout(() => {this.startQuestion()}, 10000)            
+        } else {
+            this.endRound()
+        }
+    }
+
+    endRound() {
+        if (!this.roundInProgress) return
+        console.log(`Round ${this.currentRound} ended.`)
+        this.roundInProgress = false
+        this.currentRound++
+        if (this.rounds.length > this.currentRound) {
+            this.startRound()
+        } else {
+            this.endGame()
+        }
+    }
+
+    endGame() {
+        if (!this.isRunning) return
+        this.room.players.forEach(player => {
+            player.socket.emit('end-game')
+        })
+        console.log(`Game ended.`)
+        this.isRunning = false
+    }
+
+    checkPlayersReady(){
+        return this.room.players.every(player => player.enoughQuestions(this.numRounds))
+    }
+
+
+    generateRounds() {
+        for (let i = 0; i < this.numRounds; i++) {
+            this.rounds.push(new Round(i, this.room.players.filter(player => player.connected)))
+        }
     }
 
 }
 
-function shuffle(array) {
-    let m = array.length
-    let temp
-    let i
-    while (m) {
-      i = Math.floor(Math.random() * m--);
-      temp = array[m];
-      array[m] = array[i];
-      array[i] = temp;
-    }  
-    return array;
-}
 
-
+module.exports = Game
 
 /* class Game {
 	constructor(room){
@@ -58,16 +101,7 @@ function shuffle(array) {
 	this.room = room
 	console.log("New game created")
 	}
-	addQuestion(questionData, type){
-	let newQuestion
-	switch(type){
-		case "input":
-		newQuestion = new InputQuestion(questionData.creator, questionData.questionText, questionData.answer)
-		case "choice":
-		newQuestion = new ChoiceQuestion(questionData.creator, questionData.questionText, questionData.answers, questionData.options)
-	}
-	this.questions.push(newQuestion)
-	}
+	
 	async gameloop(){
 	this.isRunning = true
 	//load questions
