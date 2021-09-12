@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
-import Modal from './Modal'
-import { useGameData } from '../contexts/GameDataContext'
-import '../stylesheets/NewQuestionModal.css'
+import Modal from '../../../../Modal'
+import { useGameData } from '../../../../../contexts/GameDataContext'
+import './/NewQuestionModal.css'
 
 export default function NewQuestionModal() {
     const { showNewQuestionModal, closeNewQuestionModal, addQuestion } = useGameData()
