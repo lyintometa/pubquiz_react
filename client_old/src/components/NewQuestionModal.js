@@ -1,10 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
 import Modal from './Modal'
-import { useGameData } from '../contexts/GameDataContext'
 import '../stylesheets/NewQuestionModal.css'
 
-export default function NewQuestionModal() {
-    const { showNewQuestionModal, closeNewQuestionModal, addQuestion } = useGameData()
+export default function NewQuestionModal({ showNewQuestionModal, closeNewQuestionModal, addQuestion }) {
     const [duplicateOptions, setDuplicateOptions] = useState([])
     const [questionComplete, setQuestionComplete] = useState(false)
     const [text, setText] = useState("")

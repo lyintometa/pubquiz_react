@@ -1,0 +1,16 @@
+.score {
+    text-align: center;
+}
+
+.name {
+    width: 30%;
+}
+
+.answer {
+    width: 50%;
+}
+
+.data-field {
+    border: 2px solid black;
+    padding: 5px 20px;
+}

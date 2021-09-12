@@ -1,0 +1,15 @@
+.player:last-child .score:first-child {
+    border-bottom-left-radius: 10px;
+}
+
+.player:last-child .status:last-child {
+    border-bottom-right-radius: 10px;
+}
+
+.player {
+    background-color: rgb(196, 149, 149);
+}
+
+.player.self{
+    background-color: rgb(201, 121, 121);
+}

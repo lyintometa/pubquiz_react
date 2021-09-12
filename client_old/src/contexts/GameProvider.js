@@ -7,7 +7,7 @@ export function useGame() {
     return useContext(GameContext)
 }
 
-export function GameProvider({ setGameState, children }) {
+export function GameProvider({ gameState, setGameState, children }) {
     const [ownQuestion, setOwnQuestion] = useState(false)
     const [questionData, setQuestionData] = useState({text: "Placeholder Text", options: ["option1", "option2", "option3", "option4"]})
     const [selectedOption, setSelectedOption] = useState()
@@ -15,9 +15,7 @@ export function GameProvider({ setGameState, children }) {
     const [readyState, setReadyState] = useState(false)
     const socket = useSocket()
 
-    function startGame() {
-        socket.emit('request-start-game')
-    }
+    const continueGame = () => socket.emit('request-continue-game')
 
     useEffect(() => {
         if(socket == null) return
@@ -57,7 +55,7 @@ export function GameProvider({ setGameState, children }) {
     }, [socket])
 
     const value = {
-        startGame,
+        continueGame,
         ownQuestion,
         questionData,
         selectedOption,

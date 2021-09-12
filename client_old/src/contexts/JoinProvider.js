@@ -1,5 +1,6 @@
 import { useContext, createContext, useEffect, useState } from 'react'
 import { useSocket } from './SocketProvider'
+import useLocalStorage from '../hooks/useLocalStorage'
 
 const JoinContext = createContext()
 
@@ -7,8 +8,10 @@ export function useJoin() {
     return useContext(JoinContext)
 }
 
-export function JoinProvider({ id, setId, setInsideRoom, room, setRoom, children }) {
+export function JoinProvider({ setInsideRoom, children }) {
     const socket = useSocket()
+    const [id, setId] = useLocalStorage('id')
+    const [room, setRoom] = useLocalStorage('room')
     const [showReconnectModal, setShowReconnectModal] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
     const [username, setUsername] = useState()
@@ -55,6 +58,7 @@ export function JoinProvider({ id, setId, setInsideRoom, room, setRoom, children
     }
 
     const value = {
+        room,
         joinRoom,
         showReconnectModal,
         closeReconnectModal,

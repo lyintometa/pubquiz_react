@@ -1,0 +1,14 @@
+.header-bar {
+    background-color: black;
+    display: grid;
+    grid-auto-flow: column;
+}
+
+.header-title {
+    margin-left: 10px;
+}
+
+.header-room {
+    text-align: end;
+    margin-right: 10px;
+}

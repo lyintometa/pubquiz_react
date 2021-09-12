@@ -3,9 +3,9 @@ import { useQuestions } from '../contexts/QuestionsProvider'
 import NewQuestionModal from './NewQuestionModal'
 import '../stylesheets/GameMenu.css'
 
-export default function GameMenu({ isAdmin }) {
+export default function GameMenu({ isAdmin, playersData, gameState }) {
     const { addQuestion, showNewQuestionModal, openNewQuestionModal, closeNewQuestionModal, canAddQuestion } = useQuestions()
-    const { startGame, readyState, setReadyState } = useGame()
+    const { continueGame, readyState, setReadyState } = useGame()
 
     function toggleReadyState(){
         if (readyState == false) {
@@ -14,6 +14,8 @@ export default function GameMenu({ isAdmin }) {
         }
         setReadyState(false)
     }
+
+    const everyoneReady = () => playersData.filter(player => !player.state).length == 0
 
     const readyButton = <button onClick={() => toggleReadyState()}>{!readyState ? "Ready" : "Not ready"}</button>
 
@@ -32,7 +34,9 @@ export default function GameMenu({ isAdmin }) {
                     {/* add "mode" selection */}
                     <p>Here are also your admin controls, you can use them to start the game (and soon to change the 
                     game settings).</p>
-                    <button onClick={startGame}>Start Game</button>
+                    <button onClick={continueGame} disabled={!everyoneReady()}>
+                        {gameState === "not started" ? "Start Game" : "Next Question"}
+                        </button>
                 </div> : null
                 }
             </div>

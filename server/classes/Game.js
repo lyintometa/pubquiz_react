@@ -1,45 +1,97 @@
 const Round = require('./Round')
 
 class Game {
+    static NOT_STARTED = "notStarted"
+    static ROUND_IN_PROGRESS = "roundInProgress"
+    static ROUND_OVER = "roundOver"
+    static GAME_OVER = "over"
+
     constructor(room) {
         this.isRunning = false
         this.questionInProgress = false
         this.roundInProgress = false
         this.room = room
-        this.numRounds = 1
+        this.socket = room.socket
+        this.numRounds = 2
         this.rounds = []
 
+        this.state = Game.NOT_STARTED
         this.currentRound = 0
-        this.currentQuestion = 0
+        /* this.currentQuestion = 0 */
+    }
+
+    getFullData() {
+        return {            
+            rounds: this.numRounds,
+            currentPhase: this.state,
+            everyoneReady: this.room.isReady
+        }
+    }
+
+    sendGameData = playerSocket => playerSocket.emit('update-game-data', this.getFullData())
+
+    updateGame = () => this.socket.emit('update-game-data', this.getFullData())
+
+    continueGame () {
+        switch (this.state) {
+            case Game.NOT_STARTED:
+                this.startGame()
+                this.startRound()
+                this.updateGame()
+                this.nextQuestion()
+                break;
+            case Game.ROUND_IN_PROGRESS:
+                this.nextQuestion()
+                break;
+            case Game.ROUND_OVER:
+                this.startRound()
+                this.nextQuestion()
+                break;
+            case Game.GAME_OVER:
+                //this.displayResults()
+                break;
+            default:
+                break;
+        }
     }
 
     startGame() {
-        if (this.isRunning || !this.checkPlayersReady()) return
-        console.log(`Game started.`)
+        if (!this.room.getReady()) return
+        console.log(`Game starting.`)
         this.generateRounds()
-        this.isRunning = true
-        this.startRound()
     }
 
-    startRound() {
-        if (this.roundInProgress) return
+    startRound(){
+        if (!this.room.getReady()) return
+        this.state = Game.ROUND_IN_PROGRESS
+        this.currentRound++
         console.log(`Round ${this.currentRound} started.`)
-        this.roundInProgress = true
-        this.currentQuestion = 0
-        this.startQuestion()
     }
 
-    startQuestion() {
+    nextQuestion(){
+        const round = this.rounds[this.currentRound - 1]
+        if (round && round.questionActive) return
+        round.askQuestion()
+        this.room.setReady(false)
+        if (!round.questionLeft()) {
+            if (this.currentRound === this.numRounds) this.state = Game.GAME_OVER
+            else this.state = Game.ROUND_OVER
+        }
+    }
+
+    /* startQuestion() {
         if (this.questionInProgress) return
+        if (!this.checkPlayersReady()) return
+        this.room.setReady(false)
         this.questionInProgress = true
         this.room.players.forEach(player => {
             player.setAnswer('')
         })
         const question = this.rounds[this.currentRound].askQuestion()
         setTimeout(() => {this.endQuestion(question)}, 10000)
-    }
+    } */
 
-    endQuestion(question) {
+    /* endQuestion(question) {
         if (!this.questionInProgress) return
         console.log(`Question ${this.currentQuestion} of Round ${this.currentRound} ended.`)
         this.questionInProgress = false
@@ -49,13 +101,13 @@ class Game {
         })
         this.currentQuestion++
         if (this.rounds[this.currentRound].hasNextQuestion()) {
-            setTimeout(() => {this.startQuestion()}, 10000)            
+            //setTimeout(() => {this.startQuestion()}, 10000)            
         } else {
             this.endRound()
         }
-    }
+    } */
 
-    endRound() {
+    /* endRound() {
         if (!this.roundInProgress) return
         console.log(`Round ${this.currentRound} ended.`)
         this.roundInProgress = false
@@ -65,25 +117,21 @@ class Game {
         } else {
             this.endGame()
         }
-    }
+    } */
 
-    endGame() {
+    /* endGame() {
         if (!this.isRunning) return
         this.room.players.forEach(player => {
             player.socket.emit('end-game')
         })
         console.log(`Game ended.`)
         this.isRunning = false
-    }
-
-    checkPlayersReady(){
-        return this.room.players.every(player => player.enoughQuestions(this.numRounds))
-    }
-
+    } */
 
     generateRounds() {
+        const currentPlayers = this.room.players.filter(player => player.connected)
         for (let i = 0; i < this.numRounds; i++) {
-            this.rounds.push(new Round(i, this.room.players.filter(player => player.connected)))
+            this.rounds.push(new Round(this.socket, i + 1, currentPlayers))
         }
     }
 
@@ -91,29 +139,3 @@ class Game {
 
 
 module.exports = Game
-
-/* class Game {
-	constructor(room){
-	this.round = 0
-	this.isRunning = false
-	this.roundInProgress = false
-	this.questions = []
-	this.room = room
-	console.log("New game created")
-	}
-	
-	async gameloop(){
-	this.isRunning = true
-	//load questions
-	while(this.isRunning) {
-		this.roundInProgress = true
-		this.round++
-		//send question
-		//wait
-		//evaluate answers + update score
-		//if no questions left => isRunning = false
-		this.isRunning = false
-	}
-	//display winner
-	}/
-} */

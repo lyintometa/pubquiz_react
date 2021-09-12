@@ -1,0 +1,43 @@
+.question-input {
+    width: 98%;
+    text-align: left;
+    resize: vertical;
+    height: 300px;
+    padding: 10px;
+}
+
+.answer-input {
+    background-color: rgb(113, 231, 109);
+}
+.wrong-input {
+    background-color: lightcoral;
+}
+
+.answer-input, .wrong-input {
+    margin: 5px;
+    justify-self: center;
+}
+
+.options-input-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    margin: 20px 0;
+}
+
+@media only screen and (max-width: 768px) {
+    .question-input {
+        width: 85%;
+        height: 30%;
+    }
+    .question-form {
+        width: 100vw;
+    }
+    .answer-input, .wrong-input {
+        width: 40vw;
+    }
+}
+
+.duplicate {
+    color: red;
+}

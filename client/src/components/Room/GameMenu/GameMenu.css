@@ -1,0 +1,10 @@
+.game-menu-container {
+    background-color: grey;
+    text-align: center;
+    width: 80%;
+    margin: auto;
+    border-radius: 10px;
+    border: 2px solid black;
+    margin-top: 10vmin;
+    padding: 20px;
+}

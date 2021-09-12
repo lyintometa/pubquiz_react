@@ -1,28 +1,41 @@
-import { useRef, useState } from 'react'
-import '../stylesheets/Join.css'
-import { useJoin } from '../contexts/JoinProvider'
+import React, { useEffect, useState } from 'react'
+import { useJoin } from '../contexts/JoinContext'
+import { useLocalData } from '../contexts/LocalDataContext'
 import ReconnectModal from './ReconnectModal'
+import '../stylesheets/Join.css'
 
-export default function Join({ room }) {
-    const usernameRef = useRef()
-    const roomRef = useRef('')
-    const { joinRoom, showReconnectModal, closeReconnectModal, username, errorMessage } = useJoin()
-    const [btnText, setBtnText] = useState('Create Room')
+export default function Join() {
+    const { name } = useLocalData()
+    const { createRoom, joinRoom, errorMessage } = useJoin()
+    
+    const [nameInput, setNameInput] = useState(name ? name : '')
+    const [roomInput, setRoomInput] = useState('')
+    const [roomInputEmpty, setRoomInputEmpty] = useState(true)
+
+    const allowedSymbolsRoomInput = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     function handleSubmit(e) {
         e.preventDefault()
-        joinRoom(usernameRef.current.value, roomRef.current.value)
+        if (roomInputEmpty) createRoom(nameInput)
+        else joinRoom(nameInput, roomInput)
     }
 
-    function updateButtonText(){
-        if (roomRef.current.value === '') return setBtnText('Create Room')
-        roomRef.current.value = roomRef.current.value.slice(0, 4)
-        setBtnText('Join Room')
+    const handleRoomInputChange = event => {
+        const newValue = event.target.value.toUpperCase()
+        const newLength = newValue.length
+        if (newLength === 0) {
+            if (!roomInputEmpty) setRoomInputEmpty(true)
+        } else {
+            if (roomInputEmpty) setRoomInputEmpty(false)
+            if (newLength > 4) return // too long
+            if (allowedSymbolsRoomInput.indexOf(newValue[newLength - 1]) === -1) return // invalid char
+        }
+        setRoomInput(newValue)
     }
 
     return (
         <>
-            <ReconnectModal showReconnectModal={showReconnectModal} closeReconnectModal={closeReconnectModal} joinRoom={joinRoom} username={username} room={room} />
+            <ReconnectModal/>
 
             <div className="join-container">
                 <div className="logo-box">
@@ -35,9 +48,9 @@ export default function Join({ room }) {
                         className="join-input"
                         type="text"
                         id="input-username"
-                        ref={usernameRef}
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
                         autoComplete="off"
-                        required
                     />
                     <br/>
                     <label className="join-label" htmlFor="input-room">Room</label>
@@ -46,13 +59,14 @@ export default function Join({ room }) {
                         className="join-input"
                         type="text"
                         id="input-room"
-                        ref={roomRef}
+                        value={roomInput}
                         autoComplete="off"
-                        onChange={() => updateButtonText()}
+                        spellCheck="false"
+                        onChange={e => handleRoomInputChange(e)}
                     />
                         {errorMessage ? <span className="error-message">{errorMessage}</span> : null}
                     <br/>
-                    <button className="submit-btn" type="submit">{btnText}</button>
+                    <button className="submit-btn" type="submit">{roomInputEmpty ? "Create Room" : "Join Room"}</button>
                 </form>
             </div>
         </>

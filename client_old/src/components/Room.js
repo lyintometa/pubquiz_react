@@ -33,7 +33,8 @@ export default function Room({ room, gameState, isAdmin }) {
                 </tbody>
             </table>
             <div className="room-content-container">
-                {gameState == 'not started' ? <GameMenu modalOpen="modalOpen" isAdmin={isAdmin}/> : <QuestionArea/>}
+                {gameState == 'not started' ? null : <QuestionArea/>}
+                <GameMenu modalOpen="modalOpen" isAdmin={isAdmin} playersData={playersData} gameState={gameState}/>
             </div>
         </div>
         

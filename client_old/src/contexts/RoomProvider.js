@@ -60,11 +60,11 @@ export function RoomProvider({ setIsAdmin, children }) {
         socket.on('update-state', stateData => {
             setPlayersData(prevPlayers => {
                 console.log(stateData)
-                const playerToUpdate = prevPlayers.find(player => player.id === stateData.id)
+                const players = [...prevPlayers]
+                const playerToUpdate = players.find(player => player.id === stateData.id)
                 playerToUpdate.state = stateData.state
-                const otherPlayersData = prevPlayers.filter(player => player.id !== stateData.id)
                 console.log(playerToUpdate)
-                return [...otherPlayersData, playerToUpdate]
+                return players
             })
         })
         console.log(playersData)

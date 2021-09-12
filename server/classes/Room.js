@@ -2,40 +2,43 @@ const Game = require('./Game')
 const { randomString } = require('../util/helper')
 
 class Room {
-	constructor() {
+	constructor(io) {
 		this.players = []
 		this.id = randomString(4)
+		this.socket = io.to(this.id)
 		this.game = new Game(this)
+
 		console.log(`Room ${this.id} created`)
 	}
 
-	setAdmin() {
-		if (this.admin && this.admin.connected) return
-		this.admin = this.players.find(player => player.connected)
-		if(!this.admin) return
-		this.admin.socket.emit('set-admin')
-	}
+	/* reconnectPlayer = async (socket, playerId) => {
+		const player = this.getPlayer(playerId)
+		await player.addToRoom(this.id)
+		this.updateAdmin()
+		player.reconnect(socket)
+	} */
 
-	addPlayer(player) {
+	addPlayer = async player => {
+		await player.addToRoom(this.id)
 		player.room = this
 		this.players.push(player)
+		this.updateAdmin()
+		player.getOtherPlayer = this.getPlayer
 		player.connect()
 	}
 
-	hasPlayer(playerId) {
-		return this.players.some(player => player.id == playerId)
+	getPlayer = (playerId) => this.players.find(player => player.id == playerId)
+
+	updateAdmin() {
+		if (this.players.some(player => player.isAdmin)) return
+		const connectedPlayer = this.players.find(player => player.isConnected)
+		if(!connectedPlayer) return
+		connectedPlayer.isAdmin = true
+		this.socket.emit('set-admin', {adminId: connectedPlayer.id}) // remove after refactor
 	}
 
-	getPlayer(playerId) {
-		return this.players.find(player => player.id == playerId)
-	}
-
-	printPlayers() {
-		const nameArray = []
-		this.players.forEach(player => nameArray.push(player.name))
-		console.log(`Room ${this.id}: ` + nameArray.join(','))
-	}
-
+	get isReady() { return !this.players.some(player => !player.isReady) }
+	set isReady(value) { this.players.forEach(player => player.isReady = value) }
 }
 
 module.exports = Room

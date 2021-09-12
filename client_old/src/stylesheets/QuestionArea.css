@@ -1,0 +1,11 @@
+.selected {
+    background-color: yellow;
+}
+
+.correct {
+    background-color: lightgreen;
+}
+
+.wrong {    
+    background-color: lightsalmon;
+}

@@ -12,8 +12,11 @@ export function SocketProvider({ id, roomId, children }) {
 
     useEffect(() => {
         const newSocket = io(
-            'http://localhost:5000',
-            { query: { userId: id, roomId } }
+            //'http://localhost:5000',
+            'http://192.168.178.89:5000',
+            {
+                //transports: ['websocket'],
+                query: { userId: id, roomId } }
         )
         setSocket(newSocket)
 

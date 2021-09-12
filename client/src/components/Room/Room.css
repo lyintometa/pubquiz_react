@@ -1,0 +1,28 @@
+
+.room-container {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    grid-template-rows: 100%;
+    height: 100%;
+    font-size: 24px;
+}
+
+@media only screen and (max-width: 1600px) {
+    .room-container {
+        display: inline;
+    }
+}
+
+.room-content-container {
+    display: grid;
+    margin: auto;
+}
+
+@media only screen and (max-width: 600px) {
+    .room-container {
+        display: inline;
+    }
+    .hidden-small {
+        display: none;
+    }
+}
