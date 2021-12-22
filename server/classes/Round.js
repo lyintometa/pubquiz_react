@@ -1,6 +1,6 @@
-const { shuffle } = require('../util/helper')
+import { shuffle } from '../util/helper.js'
 
-class Round {
+export default class Round {
     constructor(socket, number, players) {
         this.number = number
         this.questionNumber = 0
@@ -64,5 +64,3 @@ class Round {
         currentPlayer.playerAnswers[this.questionNumber - 1].correct = value
     }
 }
-
-module.exports = Round

@@ -1,6 +1,6 @@
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid'
 
-class Question {
+export default class Question {
 	constructor(text, answer, playerId){
         this.text = text
         this.answer = answer
@@ -21,7 +21,7 @@ class Question {
     }
 }
 
-class InputQuestion extends Question {
+export class InputQuestion extends Question {
     static type = 'input'
 	constructor({ text, answer }, playerId) {
         super(text, answer, playerId)
@@ -31,7 +31,7 @@ class InputQuestion extends Question {
     }
 }
 
-class ChoiceQuestion extends Question {
+export class ChoiceQuestion extends Question {
     static type = 'choice'
 	constructor({ text, answer, wrongOptions }, playerId) {
         super(text, answer, playerId)
@@ -48,7 +48,7 @@ class ChoiceQuestion extends Question {
     }
 }
 
-class EstimationQuestion extends Question {
+export class EstimationQuestion extends Question {
     static type = 'estimation'
     constructor({ text, answer, maxOffset }, playerId) {
         super(text, answer, playerId)
@@ -73,5 +73,3 @@ function shuffle(array) {
     }  
     return array;
 }
-
-module.exports = {InputQuestion, ChoiceQuestion, EstimationQuestion}

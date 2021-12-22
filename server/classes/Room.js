@@ -1,44 +1,56 @@
-const Game = require('./Game')
-const { randomString } = require('../util/helper')
+import { EVENT_EMIT } from '../constants/events.js'
+import RoomSocketEmitter from '../src/Socket/RoomSocketEmitter.js'
+import Game from './Game.js'
+import Player from './Player.js'
 
-class Room {
+export default class Room {
+
+	static usedIds = []
+
+	players = []
+	#emitter
+
 	constructor(io) {
-		this.players = []
-		this.id = randomString(4)
-		this.socket = io.to(this.id)
+		this.id = Room.getUniqueRoomId()
+		this.#emitter = new RoomSocketEmitter(io, this.id)
+
 		this.game = new Game(this)
 
 		console.log(`Room ${this.id} created`)
 	}
 
-	/* reconnectPlayer = async (socket, playerId) => {
-		const player = this.getPlayer(playerId)
-		await player.addToRoom(this.id)
+	addNewPlayer = (name, socket) => {
+		const newPlayer = new Player(name, socket, this.id)
+		this.players.push(newPlayer)
 		this.updateAdmin()
-		player.reconnect(socket)
-	} */
-
-	addPlayer = async player => {
-		await player.addToRoom(this.id)
-		player.room = this
-		this.players.push(player)
-		this.updateAdmin()
-		player.getOtherPlayer = this.getPlayer
-		player.connect()
+		this.#emitter.toAll(EVENT_EMIT.PLAYER.ADD, newPlayer.fullInfo)
+		socket.join(this.id)
+		newPlayer.emitOtherPlayers(this.players)
+		newPlayer.addOnDisconnect(this.updateAdmin)
 	}
 
-	getPlayer = (playerId) => this.players.find(player => player.id == playerId)
+	getPlayer = playerId => this.players.find(player => player.id === playerId)
 
-	updateAdmin() {
+	updateAdmin = () => {
 		if (this.players.some(player => player.isAdmin)) return
 		const connectedPlayer = this.players.find(player => player.isConnected)
 		if(!connectedPlayer) return
 		connectedPlayer.isAdmin = true
-		this.socket.emit('set-admin', {adminId: connectedPlayer.id}) // remove after refactor
 	}
 
 	get isReady() { return !this.players.some(player => !player.isReady) }
 	set isReady(value) { this.players.forEach(player => player.isReady = value) }
-}
 
-module.exports = Room
+	static getUniqueRoomId = () => {
+		const characters = 'abcdefghijklmnopqrstuvwxyz'
+		let id = ""
+		while (id.length === 0){
+			for (let i = 0; i < 4; i++){
+				id += characters[Math.floor(Math.random()*characters.length)]
+			}
+			if (Room.usedIds.includes(id)) id = ""
+		}
+		Room.usedIds.push(id)
+		return id
+	}
+}

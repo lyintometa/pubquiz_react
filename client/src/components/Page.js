@@ -1,5 +1,5 @@
 import React from 'react'
-import Join from './Join'
+import Join from './JoinPage/JoinPage'
 import Room from './Room/Room.js'
 import { useLocalData } from '../contexts/LocalDataContext'
 import { JoinProvider } from '../contexts/JoinContext'

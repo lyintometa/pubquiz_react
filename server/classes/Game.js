@@ -1,6 +1,6 @@
-const Round = require('./Round')
+import Round from './Round.js'
 
-class Game {
+export default class Game {
     static NOT_STARTED = "notStarted"
     static ROUND_IN_PROGRESS = "roundInProgress"
     static ROUND_OVER = "roundOver"
@@ -136,6 +136,3 @@ class Game {
     }
 
 }
-
-
-module.exports = Game

@@ -1,13 +1,4 @@
-function randomString(length){
-	const characters = 'abcdefghijklmnopqrstuvwxyz'//0123456789'
-	let str = ""
-	for (let i = 0; i < length; i++){
-		str += characters[Math.floor(Math.random()*characters.length)]
-	}
-	return str
-}
-
-function shuffle(array) {
+export function shuffle(array) {
     let m = array.length
     let temp
     let i
@@ -19,5 +10,3 @@ function shuffle(array) {
     }  
     return array;
 }
-
-module.exports = { randomString, shuffle }

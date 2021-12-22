@@ -1,34 +1,39 @@
-const { v4: uuidv4 } = require('uuid');
-const { InputQuestion, ChoiceQuestion, EstimationQuestion } = require('./Questions')
+import { v4 as uuidv4 } from 'uuid'
 
-class Player {
-	constructor(_name, socket) {
-		this.id = uuidv4()
-		this.socket = socket
+import QuestionFactory from '../factories/QuestionFactory.js'
+import PlayerSocketEmitter from '../src/Socket/PlayerSocketEmitter.js'
+import { EVENT_EMIT, EVENT_RECEIVED } from '../constants/events.js'
+import SocketReceiver from '../src/Socket/SocketReceiver.js'
 
-		this.questions = []
+export default class Player {
+	id = uuidv4()
+	questions = []
+	#questionFactory = new QuestionFactory()
+	#canSubmitQuestions = true
+	#score = 0
+	#isConnected = true
+	#isReady = false
+	#isAdmin = false
+	#answer = ''
+	#roomId
+	#emitter
+	#receiver
 
-		this._score = 0
-		this._name = _name
-		this._answer = ''
-
-		this._isConnected = true
-		this._isReady = false
-		this._isAdmin = false
+	constructor(name, socket, roomId) {
+		this.name = name
+		this.#roomId = roomId
+		this.#emitter = new PlayerSocketEmitter(socket, roomId)
+		this.#receiver = new SocketReceiver(socket)
+		this.connect()
+		this.addSocketListeners()
 	}
 
 	addSocketListeners() {
-		this.socket.on('disconnect', () => this.disconnect())
-		this.socket.on('toggle-ready', () => this.isReady = !this._isReady)
-		this.socket.on('add-question', questionData => this.addQuestion(questionData))
+		this.#receiver.on('disconnect', () => this.disconnect())
+		this.#receiver.on(EVENT_RECEIVED.GAME.SUBMIT_QUESTION, questionData => this.addQuestion(questionData))
+		/* this.socket.on('toggle-ready', () => this.isReady = !this.#isReady)
 		this.socket.on('set-_answer', () => {})
-		this.socket.on('continue-game', () => this.continueGame())
-		//Socket getters
-		/* this.socket.on('get-score', (callback) => callback({score: this._score}))
-		this.socket.on('get-name', (callback) => callback({name: this._name}))
-		this.socket.on('get-answer', (callback) => callback({answer: this._answer}))
-		this.socket.on('get-isReady', (callback) => callback({isReady: this._isReady})) */
-		this.socket.on('get-isAdmin', callback => callback({isAdmin: this._isAdmin}))
+		this.socket.on('continue-game', () => this.continueGame()) */
 	}
 	/* 
 	socket.on('set-_answer', selectedOption => {
@@ -37,69 +42,37 @@ class Player {
 	})
 	*/
 
-	fullInfo(){
-		return {
-			id: this.id,
-			name: this._name,
-			score: this._score,
-			answer: this._answer,
-			isAdmin: this._isAdmin,
-			isReady: this._isReady,
-			playerState: this._isAdmin ? "admin" : this._isReady ? "ready" : "notReady" //remove when refactored
-		}
+	connect = () => {
+		this.#emitter.toSelf(EVENT_EMIT.ROOM.ACCEPT_JOIN, {playerName: this.name, playerId: this.id, roomId: this.#roomId})
+		//this.updateCanSubmitQuestion()
+		//this.room.game.updateGame()
 	}
 
-	updatePlayer(){
-		this.socket.emit('update-player', this.fullInfo())
-		this.socket.to(this.room.id).emit('update-player', this.fullInfo())
-	}
-
-	addToRoom = roomId => {
-		return 
-	}
-
-	connect = async () => {
-		const clientUpdateView = new Promise(resolve => 
-			this.socket.emit('join-room', {playerName: this._name, playerId: this.id, roomId: this.room.id}, resolve))
-		
-		this.addSocketListeners()
-		this._isConnected = true
-		this.socket.join(this.room.id)
-		await clientUpdateView
-		this.room.updateAdmin()
-	
-		this.checkQuestionAmount()
-
-		// add other players to this player
-		this.room.players.forEach(player => {
-			if (!player._isConnected) return
-			this.socket.emit('add-player', player.fullInfo())
+	emitOtherPlayers = (players) => {
+		players.forEach(player => {
+			if (!player.isConnected) return
+			this.#emitter.toSelf(EVENT_EMIT.PLAYER.ADD, player.fullInfo)
 		})
-
-		// add this player to all other players
-		this.socket.to(this.room.id).emit('add-player', this.fullInfo())
-
-		this.room.game.updateGame()
 	}
 
 	reconnect(socket){
 		console.log("reconnect")
-		this.socket = socket
+		this.#emitter.updateSocket(socket)
+		this.#receiver.updateSocket(socket)
+		this.isConnected = true
 		this.connect()
+		this.#emitter.toOthers(EVENT_EMIT.PLAYER.ADD, this.fullInfo)
 	}
 
-	disconnect() {
-		this._isConnected = false
-		this.ready = false
-		this._isAdmin = false
-		console.log(this.socket)
-		console.log(this.room.id)
-		console.log(this.id)
-		if (!this.socket || !this.room || !this.id) return
-		this.socket.to(this.room.id).emit('remove-player', {id: this.id})
+	addOnDisconnect = func => {
+		this.#receiver.on('disconnect', func)
+	}
 
-		this.room.updateAdmin()
-		this.room.game.updateGame()
+	disconnect = () => {
+		this.isConnected = false
+		this.isReady = false
+		this.isAdmin = false
+		//this.room.game.updateGame()
 	}
 
 	/* setAnswer(_answer) {
@@ -112,73 +85,73 @@ class Player {
 		console.log(this.answers)
 	} */
 
-	addQuestion(questionData) {
-		console.log(`Player ${this._name} submitted a question`)
-		if (this.questions.length >= this.room.game.numRounds) return
-        switch(questionData.type){
-            case "input":
-				this.questions.push(new InputQuestion(questionData, this.id))
-				break;
-            case "choice":
-				this.questions.push(new ChoiceQuestion(questionData, this.id))
-				break;
-            case "estimation":
-				this.questions.push(new EstimationQuestion(questionData, this.id))
-				break;
-			default:
-				console.log('undefined question type requested')
-				break;
-        }
-		this.checkQuestionAmount()
-	}
-
-	checkQuestionAmount(){
-		if (this.questions.length >= this.room.game.numRounds) {
-			this.socket.emit('questions-complete')
-			if (this._isAdmin) this.ready = true
+	addQuestion = questionData => {
+		if (!this.#canSubmitQuestions) return
+		try {
+			this.#questionFactory.createQuestion(questionData)
+			this.updateCanSubmitQuestion
+		} catch (error) {
+			console.log(error) //return sth to client
 		}
 	}
 
-	continueGame = () => {
-		if (!this._isAdmin) return
-		this.room.game.continueGame()		
+	updateCanSubmitQuestion = () => {
+		this.canSubmitQuestions = this.questions.length < this.room.game.numRounds
 	}
 
-	/* addScore(amount) {
-		console.log(`Player ${this._name} new Score: ${this._score}`)
-		this._score = this._score + amount
-		this.updatePlayer()
-	} */
+	continueGame = () => {
+		if (!this.#isAdmin) return
+		this.room.game.continueGame()
+	}
 
 	increaseScore = () => {
-		this._score = this._score + 1
-		this.sendToRoom('_score-update', this._score)
+		this._score = this.#score + 1
+		this.sendToRoom('_score-update', this.#score)
 	}
 
 	//Getters
-	get isConnected() { return this._isConnected }
-	get isReady() { return !this._isConnected || this._isReady }
-	get isAdmin() { return this._isConnected && this._isAdmin }
+
+	get fullInfo() {
+		return {
+			id: this.id,
+			name: this.name,
+			score: this.#score,
+			answer: this.#answer,
+			isAdmin: this.#isAdmin,
+			isReady: this.#isReady,
+			isConnected: this.#isConnected
+		}
+	}
+
+	get isConnected() { return this.#isConnected }
+	get isReady() { return !this.#isConnected || this.#isReady }
+	get isAdmin() { return this.#isConnected && this.#isAdmin }
+	get canSubmitQuestions() { return this.#canSubmitQuestions}
 
 	//Setters
-	set isConnected(value) { this.updateFieldWithEvent('_isConnected', value, 'isConnected-update') }
+	set isConnected(value) { this.updateFieldWithEvent('#isConnected', value) }
+	set isAdmin(value) { this.updateFieldWithEvent('#isAdmin', value) }
+
 	set isReady(value) {
-		this.updateFieldWithEvent('_isReady', value, 'isReady-update')
-		this.room.game.updateGame() // remove after refactor
+		this.updateFieldWithEvent('#isReady', value)
+		//this.room.game.updateGame() // remove after refactor
 	}
-	set isAdmin(value) { this.updateFieldWithEvent('_isAdmin', value, 'isAdmin-update')	}
 
-	updateFieldWithEvent = (field, value, eventName) => {
+
+	set canSubmitQuestions(value) { 
+		if (value === this.#canSubmitQuestions) return
+		this.#canSubmitQuestions = value
+		this.socket.emit('questions-complete', value)
+		if (this.#isAdmin) this.ready = true
+	}
+
+	updateFieldWithEvent = (field, value) => {
+		if (this[field] === value) return
 		this[field] = value
-		const data = {id: this.id}
-		data[field.substring(1)] = value
-		this.room.socket.emit(eventName, data)
-		console.log(`'${eventName}' sent: {id: ${this.id}, ${field.substring(1)}: ${value}}`)
+		const valueKey = field.replace('#', '')
+		const eventName = EVENT_EMIT.PLAYER.UPDATE + capitalize(valueKey)
+		this.#emitter.toAll(eventName, { id: this.id, [valueKey]: value })
 	}
-
-	sendToRoom = (event, data) => this.room.socket.emit(event, data)
-
-
 }
 
-module.exports = Player
+const capitalize = word => word.charAt(0).toUpperCase() + word.slice(1)

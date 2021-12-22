@@ -3,7 +3,7 @@ import { useLocalData } from '../../contexts/LocalDataContext'
 import { GameDataProvider } from '../../contexts/GameDataContext'/* 
 import QuestionArea from './QuestionArea' */
 import './Room.css'
-import GameTable from './GameTable/GameTable'
+import GameTable from '../GameTable/GameTable'
 import GameMenu from './GameMenu/GameMenu'
 
 

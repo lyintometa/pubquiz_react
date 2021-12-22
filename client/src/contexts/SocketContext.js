@@ -1,5 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import io from 'socket.io-client'
+
+import { HOST_NAME } from '../constants/connection'
 
 const SocketContext = React.createContext()
 
@@ -8,19 +10,17 @@ export function useSocket() {
 }
 
 export function SocketProvider({ children }) {
+
     const [socket, setSocket] = useState()
 
-    const hostName = 'http://192.168.178.89:5000'
-
     useEffect(() => {
-        const newSocket = io(hostName)
+        const newSocket = io(HOST_NAME)
         setSocket(newSocket)
-
         return () => newSocket.close()
     }, [])
 
     return (
-        <SocketContext.Provider value={{ socket }}>
+        <SocketContext.Provider value={{socket}}>
             {children}
         </SocketContext.Provider>
     )
